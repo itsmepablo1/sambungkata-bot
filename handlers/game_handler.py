@@ -87,7 +87,7 @@ async def handle_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     if not success:
         await message.reply_text(msg, parse_mode=MD)
-        # Cek apakah setelah penalti duplikat, game langsung berakhir
+        # Cek apakah setelah penalti (duplikat / tidak ada di KBBI), game langsung berakhir
         if session.check_game_over():
             await _finalize_game(context, chat_id, session, update=update)
         else:

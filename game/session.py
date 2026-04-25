@@ -150,9 +150,26 @@ class GameSession:
         if not valid_chain:
             return False, reason, None
 
-        # Cek KBBI
+        # Cek KBBI → kena penalti nyawa + poin
         if not kbbi_valid:
-            return False, f"❌ *{word}* tidak ditemukan dalam kamus KBBI.", None
+            cp.add_score(-config.SCORE_DUPLICATE_PENALTY)
+            dead = cp.lose_life()
+            if dead:
+                self._advance_turn()
+                return (
+                    False,
+                    f"📖 *{word}* tidak ada di kamus KBBI!\n"
+                    f"-{config.SCORE_DUPLICATE_PENALTY} poin | Nyawa habis!\n"
+                    f"{cp.display_name} *ELIMINATED!*",
+                    None,
+                )
+            return (
+                False,
+                f"📖 *{word}* tidak ada di kamus KBBI!\n"
+                f"-{config.SCORE_DUPLICATE_PENALTY} poin | "
+                f"Nyawa tersisa: {cp.lives_display}",
+                None,
+            )
 
         # ✅ Valid
         bonus = config.SCORE_LONG_WORD if is_long_word(word) else 0
