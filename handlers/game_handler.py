@@ -11,7 +11,7 @@ from telegram.constants import ChatType, ParseMode
 
 import config
 from game.manager import game_manager
-from game.rules import is_long_word
+from game.rules import is_long_word, get_chain_suffix
 from kbbi.validator import kbbi
 from utils import messages
 from handlers.commands import _start_turn_timer, _finalize_game
@@ -58,9 +58,12 @@ async def handle_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if cp.user_id != user.id:
         # Cek apakah user ini adalah pemain yang terdaftar
         if user.id in session.player_map:
+            suffix = get_chain_suffix(session.last_word)
+            n = config.CHAIN_LETTERS
+            label = f"{n} huruf" if n > 1 else "huruf"
             await message.reply_text(
-                f"⏳ Sabar! Sekarang giliran {cp.display_name}.\n"
-                f"🔤 Kata harus diawali: *{session.last_word[-1].upper()}*",
+                f"\u23f3 Sabar! Sekarang giliran {cp.display_name}.\n"
+                f"\U0001f524 Awali dengan {label}: *{suffix.upper()}*",
                 parse_mode=MD,
             )
         # Bukan pemain → diam saja
@@ -107,11 +110,14 @@ async def handle_word(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     # Game lanjut
     if next_player:
+        suffix = get_chain_suffix(word)
+        n = config.CHAIN_LETTERS
+        label = f"{n} huruf" if n > 1 else "huruf"
         reply = (
-            f"✅ *{word}* diterima! +{total_pts} poin{bonus_str}\n\n"
-            f"🎯 Giliran: {next_player.display_name}\n"
-            f"🔤 Awali dengan: *{word[-1].upper()}*\n"
-            f"⏱ 60 detik..."
+            f"\u2705 *{word}* diterima! +{total_pts} poin{bonus_str}\n\n"
+            f"\U0001f3af Giliran: {next_player.display_name}\n"
+            f"\U0001f524 Awali dengan {label}: *{suffix.upper()}*\n"
+            f"\u23f1 {config.TURN_TIMEOUT_SECONDS} detik..."
         )
         await message.reply_text(reply, parse_mode=MD)
         _start_turn_timer(context, chat_id, session)

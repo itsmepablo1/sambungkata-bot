@@ -12,6 +12,7 @@ MIN_PLAYERS: int = 2                  # Minimal pemain untuk mulai
 MAX_PLAYERS: int = 20                 # Maksimal pemain per sesi
 MIN_WORD_LENGTH: int = 3              # Panjang kata minimum
 JOIN_WAIT_SECONDS: int = 60          # Waktu tunggu join sebelum mulai
+CHAIN_LETTERS: int = 2               # Jumlah huruf sambung (1, 2, atau 3)
 
 # ─── Scoring ───────────────────────────────────────────────────
 SCORE_CORRECT: int = 10              # Poin kata benar

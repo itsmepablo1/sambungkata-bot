@@ -4,7 +4,9 @@ Semua pesan menggunakan ParseMode.MARKDOWN (v1).
 Karakter spesial yang perlu di-escape di Markdown v1: * _ ` [
 """
 from typing import Optional
+import config
 from game.player import Player
+from game.rules import get_chain_suffix
 
 
 def msg_welcome() -> str:
@@ -81,33 +83,42 @@ def msg_game_started(
     player_list = "\n".join(
         f"  {i+1}. {p.display_name}" for i, p in enumerate(players)
     )
+    suffix = get_chain_suffix(starter_word)
+    n = config.CHAIN_LETTERS
+    label = f"{n} huruf" if n > 1 else "huruf"
     return (
         f"🚀 *Permainan dimulai!*\n\n"
         f"👥 *Pemain ({len(players)}):*\n{player_list}\n\n"
         f"📝 *Kata awal:* `{starter_word}`\n"
-        f"🔤 Sambung dengan huruf: *{starter_word[-1].upper()}*\n\n"
+        f"🔤 Sambung dengan {label}: *{suffix.upper()}*\n\n"
         f"🎯 Giliran pertama: {first_player.display_name}\n"
-        f"⏱ Waktu per giliran: 60 detik"
+        f"⏱ Waktu per giliran: {config.TURN_TIMEOUT_SECONDS} detik"
     )
 
 
 def msg_your_turn(player: Player, last_word: str) -> str:
+    suffix = get_chain_suffix(last_word)
+    n = config.CHAIN_LETTERS
+    label = f"{n} huruf" if n > 1 else "huruf"
     return (
         f"🎯 Giliran {player.display_name}! {player.lives_display}\n"
         f"📝 Kata terakhir: *{last_word}*\n"
-        f"🔤 Kata kamu harus diawali: *{last_word[-1].upper()}*\n"
-        f"⏱ Waktu: 60 detik"
+        f"🔤 Awali dengan {label}: *{suffix.upper()}*\n"
+        f"⏱ Waktu: {config.TURN_TIMEOUT_SECONDS} detik"
     )
 
 
 def msg_word_accepted(word: str, points: int, bonus: int, next_player: Player) -> str:
     total = points + bonus
     bonus_str = f" (+{bonus} bonus kata panjang)" if bonus else ""
+    suffix = get_chain_suffix(word)
+    n = config.CHAIN_LETTERS
+    label = f"{n} huruf" if n > 1 else "huruf"
     return (
         f"✅ *{word}* diterima! +{points}{bonus_str} = *+{total} poin*\n\n"
         f"🎯 Giliran selanjutnya: {next_player.display_name}\n"
-        f"🔤 Awali dengan: *{word[-1].upper()}*\n"
-        f"⏱ 60 detik..."
+        f"🔤 Awali dengan {label}: *{suffix.upper()}*\n"
+        f"⏱ {config.TURN_TIMEOUT_SECONDS} detik..."
     )
 
 
@@ -132,11 +143,13 @@ def msg_game_info(
     used_count: int,
 ) -> str:
     cp_str = current_player.display_name if current_player else "—"
-    last_letter = last_word[-1].upper() if last_word else "—"
+    suffix = get_chain_suffix(last_word) if last_word else "—"
+    n = config.CHAIN_LETTERS
+    label = f"{n} huruf" if n > 1 else "huruf"
     return (
         f"ℹ️ *Info Game Saat Ini*\n\n"
         f"📝 Kata terakhir: *{last_word}*\n"
-        f"🔤 Awali dengan: *{last_letter}*\n"
+        f"🔤 Awali dengan {label}: *{suffix.upper()}*\n"
         f"🎯 Giliran: {cp_str}\n"
         f"🔢 Ronde: {round_num}\n"
         f"📚 Kata terpakai: {used_count}"
