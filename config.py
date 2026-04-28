@@ -6,6 +6,10 @@ load_dotenv()
 # ─── Bot Config ───────────────────────────────────────────────
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
 
+# User ID yang boleh pakai /addskor, /delskor, /setskor
+# Tambahkan user_id lain jika perlu, pisahkan dengan koma
+BOT_ADMINS: frozenset[int] = frozenset({7183956596})
+
 # ─── Game Settings ─────────────────────────────────────────────
 TURN_TIMEOUT_SECONDS: int = 60       # Waktu per giliran (detik)
 MIN_PLAYERS: int = 2                  # Minimal pemain untuk mulai
