@@ -1,7 +1,7 @@
 """
-admin.py — Admin-only commands: /resetgame, /addskor, /delskor, /setskor
+admin.py — Admin-only commands: /resetgame, /addskor, /delskor, /setskor, /addnyawa
 
-Admin yang bisa pakai /addskor, /delskor, /setskor ditentukan
+Admin yang bisa pakai command skor & nyawa ditentukan
 berdasarkan user_id yang sudah dikonfigurasi di config.BOT_ADMINS.
 Bukan berdasarkan status admin grup Telegram.
 """
@@ -16,6 +16,7 @@ from telegram.constants import ChatType, ParseMode
 
 import config
 from game.manager import game_manager
+from game.session import GameState
 from utils.database import add_player_score, set_player_score, get_player_stats
 
 logger = logging.getLogger(__name__)
@@ -340,5 +341,106 @@ async def cmd_setskor(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await update.message.reply_text(
         f"✅ Skor *{display}* berhasil di-set!\n"
         f"🏆 Total sekarang: *{score} poin*",
+        parse_mode=MD,
+    )
+
+
+# ── /addnyawa ─────────────────────────────────────────────────
+
+async def cmd_addnyawa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Tambah nyawa pemain di sesi game yang sedang berjalan. Hanya BOT_ADMINS.
+
+    Nyawa bersifat in-session (tidak disimpan ke DB).
+    Jumlah nyawa maksimum dibatasi 2x MAX_LIVES.
+
+    Penggunaan:
+      /addnyawa @username 2
+      reply ke pesan pemain lalu /addnyawa 1
+    """
+    if update.effective_chat.type not in (ChatType.GROUP, ChatType.SUPERGROUP):
+        return
+
+    if not _is_bot_admin(update.effective_user.id):
+        await update.message.reply_text(
+            "\u26d4 Kamu tidak punya izin untuk menggunakan command ini.", parse_mode=MD
+        )
+        return
+
+    chat_id = update.effective_chat.id
+    session = game_manager.get_session(chat_id)
+
+    if not session or session.state != GameState.RUNNING:
+        await update.message.reply_text(
+            "\u274c Tidak ada game yang sedang berjalan saat ini.", parse_mode=MD
+        )
+        return
+
+    args = context.args or []
+    reply = update.message.reply_to_message
+    has_reply_target = reply and reply.from_user and not reply.from_user.is_bot
+    amount_str = args[0] if has_reply_target else (args[1] if len(args) > 1 else None)
+
+    if amount_str is None:
+        await update.message.reply_text(
+            "\u26a0\ufe0f *Cara pakai /addnyawa:*\n"
+            "`/addnyawa @username 2` \u2014 tambah 2 nyawa\n"
+            "Atau reply ke pesan pemain: `/addnyawa 1`",
+            parse_mode=MD,
+        )
+        return
+
+    try:
+        amount = int(amount_str)
+    except ValueError:
+        await update.message.reply_text(
+            f"\u274c `{amount_str}` bukan angka valid.", parse_mode=MD
+        )
+        return
+
+    if amount <= 0:
+        await update.message.reply_text(
+            "\u26a0\ufe0f Jumlah nyawa harus lebih dari 0.", parse_mode=MD
+        )
+        return
+
+    # Resolve target — harus pemain yang sedang aktif di sesi ini
+    target = await _resolve_target(update, context, chat_id, args)
+    if target is None:
+        if not has_reply_target:
+            await update.message.reply_text(
+                "\u26a0\ufe0f *Cara pakai /addnyawa:*\n"
+                "`/addnyawa @username 2` \u2014 tambah 2 nyawa\n"
+                "Atau reply ke pesan pemain: `/addnyawa 1`",
+                parse_mode=MD,
+            )
+        return
+
+    uid, uname, fname = target
+    player = session.player_map.get(uid)
+
+    if player is None:
+        display_t = f"@{uname}" if uname else fname
+        await update.message.reply_text(
+            f"\u274c *{display_t}* tidak ada dalam sesi game ini.", parse_mode=MD
+        )
+        return
+
+    # Batas maksimum nyawa = 2x MAX_LIVES
+    max_lives = config.MAX_LIVES * 2
+    before = player.lives
+    player.lives = min(max_lives, player.lives + amount)
+    added = player.lives - before
+
+    # Jika sebelumnya eliminated karena nyawa 0, hidupkan kembali
+    if player.is_eliminated and player.lives > 0:
+        player.is_eliminated = False
+
+    display = f"@{uname}" if uname else fname
+    hearts = "\u2764\ufe0f" * player.lives
+
+    await update.message.reply_text(
+        f"\u2764\ufe0f Nyawa *{display}* ditambah *+{added}*!\n"
+        f"Nyawa sekarang: {hearts} (*{player.lives}*)",
         parse_mode=MD,
     )

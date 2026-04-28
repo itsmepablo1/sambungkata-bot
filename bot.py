@@ -23,7 +23,7 @@ from handlers.commands import (
     cmd_stop, cmd_skip, cmd_skor, cmd_info,
     cmd_leaderboard, cmd_stats,
 )
-from handlers.admin import cmd_resetgame, cmd_addskor, cmd_delskor, cmd_setskor
+from handlers.admin import cmd_resetgame, cmd_addskor, cmd_delskor, cmd_setskor, cmd_addnyawa
 from handlers.game_handler import handle_word
 
 # ── Logging ───────────────────────────────────────────────────
@@ -59,6 +59,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("addskor",     cmd_addskor))
     app.add_handler(CommandHandler("delskor",     cmd_delskor))
     app.add_handler(CommandHandler("setskor",     cmd_setskor))
+    app.add_handler(CommandHandler("addnyawa",    cmd_addnyawa))
 
     # ── Message Handler (kata game) ────────────────────────────
     app.add_handler(
